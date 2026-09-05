@@ -49,6 +49,12 @@ class GameSession:
         )  # 建立控制討論暫停/喚醒的紅綠燈開關
 
     async def check_and_start(self, interaction: discord.Interaction):
+        # 所有人輸入完畢後，把舊的輸入按鈕拿掉
+        if hasattr(self, 'submit_msg'):
+            try:
+                await self.submit_msg.edit(content="性癖收集完畢", view=None)
+            except Exception as e:
+                print(f"清除按鈕時發生錯誤: {e}")
         word_to_players = {}
         for player, word in self.words_pool.items():
             w_cleaned = word.lower()
@@ -163,6 +169,9 @@ class GameSession:
 
             await view.wait()
 
+            # 【新增這行】投票時間到，把下拉選單拿掉
+            await msg.edit(content="本輪投票已結束", view=None)
+            
             # ---------------- 3. 投票結算 ----------------
             if not view.votes:
                 await self.channel.send(
@@ -306,6 +315,9 @@ class GameSession:
                         "夜幕低垂，狼人暗中行動", view=secret_view
                     )
                     await secret_view.wait()
+
+                    # 【新增這行】時間到或選擇完畢後，把按鈕拿掉，防止往上滑誤觸
+                    await msg.edit(content="狼人行動階段已結束", view=None)
 
                     if secret_view.target:
                         killed_target = secret_view.target
@@ -534,7 +546,10 @@ async def begin(interaction: discord.Interaction):
 
             await interaction.response.send_modal(WordSubmitModal(self.game))
 
-    await interaction.channel.send(view=SubmitButtonView(game))
+    # 原本是： await interaction.channel.send(view=SubmitButtonView(game))
+    # 【改成這樣】：把發出去的按鈕訊息記錄在 game 裡面
+    msg = await interaction.channel.send("點擊下方按鈕輸入你的性癖：", view=SubmitButtonView(game))
+    game.submit_msg = msg # 記錄下來
 
 
 @client.tree.command(name="cancel_game", description="強制結束目前的遊戲")
