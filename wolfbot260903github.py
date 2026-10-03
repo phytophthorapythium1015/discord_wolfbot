@@ -602,12 +602,7 @@ async def vote_cmd(interaction: discord.Interaction):
     game.vote_event.set()
     await interaction.followup.send("討論結束，開始投票", ephemeral=True)
 
-# --- 啟動機器人 ---
-if __name__ == "__main__":
-    # 從環境變數讀取 Token，避免明碼寫在程式中
-    TOKEN = os.getenv("DISCORD_TOKEN")
-    
-# 建立一個簡單的 HTTP 伺服器，用來通過 Render 的連接埠掃描與 UptimeRobot Ping
+# --- 啟動機器人與 Web 伺服器 ---
 async def handle(request):
     return web.Response(text="Bot is running!")
 
