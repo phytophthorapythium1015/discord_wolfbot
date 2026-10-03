@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 load_dotenv()
 import discord
 from discord import app_commands
+from aiohttp import web
 
 # 1. 設定機器人權限 (Intents)
 intents = discord.Intents.default()
@@ -606,7 +607,30 @@ if __name__ == "__main__":
     # 從環境變數讀取 Token，避免明碼寫在程式中
     TOKEN = os.getenv("DISCORD_TOKEN")
     
+# 建立一個簡單的 HTTP 伺服器，用來通過 Render 的連接埠掃描與 UptimeRobot Ping
+async def handle(request):
+    return web.Response(text="Bot is running!")
+
+app = web.Application()
+app.router.add_get("/", handle)
+
+async def start_web_server():
+    runner = web.AppRunner(app)
+    await runner.setup()
+    port = int(os.getenv("PORT", 10000))
+    site = web.TCPSite(runner, "0.0.0.0", port)
+    await site.start()
+    print(f"Web server started on port {port}")
+
+async def main():
+    TOKEN = os.getenv("DISCORD_TOKEN")
     if not TOKEN:
         print("錯誤：找不到 DISCORD_TOKEN，請檢查環境變數設定。")
-    else:
-        client.run(TOKEN)
+        return
+    
+    # 同時啟動網頁伺服器與 Discord 機器人
+    await start_web_server()
+    await client.start(TOKEN)
+
+if __name__ == "__main__":
+    asyncio.run(main())
